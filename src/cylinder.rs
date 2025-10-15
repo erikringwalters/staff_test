@@ -15,14 +15,14 @@ pub fn spawn_cylinder_mesh(
 ) {
     let radius = 0.5;
     let height = 1.;
-    let resolution = 64;
+    let resolution = 6;
     let segments = 1;
 
     let mesh = generate_cylinder_mesh(radius, height, resolution, segments);
 
     commands.spawn((
         Mesh3d(meshes.add(mesh)),
-        MeshMaterial3d(materials.add(Color::from(css::BLUE))),
+        MeshMaterial3d(materials.add(Color::from(css::GREEN))),
         Transform::from_xyz(-1., height / 2. + FLOOR_HEIGHT / 2., -1.),
     ));
 }

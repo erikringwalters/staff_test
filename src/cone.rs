@@ -15,11 +15,11 @@ pub fn spawn_cone_mesh(
 ) {
     let height = 1.;
     let radius = 0.5;
-    let resolution = 64;
+    let resolution = 6;
     let mesh = generate_cone_mesh(height, radius, resolution);
     commands.spawn((
         Mesh3d(meshes.add(mesh)),
-        MeshMaterial3d(materials.add(Color::from(css::PINK))),
+        MeshMaterial3d(materials.add(Color::from(css::RED))),
         Transform::from_xyz(1., height / 2. + FLOOR_HEIGHT / 2., -1.),
     ));
 }

@@ -15,7 +15,7 @@ pub fn spawn_staff_mesh(
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
 ) {
-    let radius = 0.01;
+    let radius = 0.05;
     let height = 2.;
     let resolution = 6;
     let segments = 4;
@@ -34,7 +34,7 @@ pub fn spawn_staff_mesh(
     commands.spawn((
         Mesh3d(meshes.add(mesh)),
         MeshMaterial3d(materials.add(Color::from(css::SADDLE_BROWN))),
-        Transform::from_xyz(-1., height / 2. + FLOOR_HEIGHT / 2., 1.),
+        Transform::from_xyz(-1., height / 2. + FLOOR_HEIGHT / 2. + 0.5, 1.),
     ));
 }
 
@@ -63,13 +63,29 @@ pub fn generate_staff_mesh(
     let step_theta = TAU / resolution as f32;
     let step_y = 2.0 * half_height / segments as f32;
 
+    // Top variance X and Z must be known for cap placement
+    let bvx = rand.random::<f32>();
+    let bvz = rand.random::<f32>();
+
+    let tvx = rand.random::<f32>();
+    let tvz = rand.random::<f32>();
+    info!("tvx: {:?}, tvy: {:?}", tvx, tvz);
+
     // rings
 
     for ring in 0..num_rings {
-        let offset = (
-            horizontal_variance * rand.random::<f32>(),
-            horizontal_variance * rand.random::<f32>(),
-        );
+        let (vx, vz) = if ring == 0 {
+            // Bottom variance X and Z
+            (bvx, bvz)
+        } else if ring == num_rings - 1 {
+            // Top variance X and Z
+            (tvx, tvz)
+        } else {
+            // New random variances X and Z
+            (rand.random::<f32>(), rand.random::<f32>())
+        };
+
+        let offset = (horizontal_variance * vx, horizontal_variance * vz);
         let y = -half_height + ring as f32 * step_y;
 
         for segment in 0..=resolution {
@@ -106,17 +122,31 @@ pub fn generate_staff_mesh(
     // caps
     let mut build_cap = |top: bool| {
         let offset = positions.len() as u32;
-        let (y, normal_y, winding) = if top {
-            (half_height, 1., (1, 0))
+        let (y, normal_y, winding, variance_offset) = if top {
+            (
+                half_height,
+                1.,
+                (1, 0),
+                (horizontal_variance * tvx, horizontal_variance * tvz),
+            )
         } else {
-            (-half_height, -1., (0, 1))
+            (
+                -half_height,
+                -1.,
+                (0, 1),
+                (horizontal_variance * bvx, horizontal_variance * bvz),
+            )
         };
 
         for i in 0..resolution {
             let theta = i as f32 * step_theta;
             let (sin, cos) = sin_cos(theta);
 
-            positions.push([cos * radius, y, sin * radius]);
+            positions.push([
+                cos * radius + variance_offset.0,
+                y,
+                sin * radius + variance_offset.1,
+            ]);
             normals.push([0.0, normal_y, 0.0]);
             uvs.push([0.5 * (cos + 1.0), 1.0 - 0.5 * (sin + 1.0)]);
         }

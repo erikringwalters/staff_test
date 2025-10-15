@@ -9,7 +9,7 @@ pub fn spawn_cube_mesh(
     let mesh = generate_cube_mesh();
     commands.spawn((
         Mesh3d(meshes.add(mesh)),
-        MeshMaterial3d(materials.add(Color::from(css::DARK_GREEN))),
+        MeshMaterial3d(materials.add(Color::from(css::BLUE))),
         Transform::from_xyz(1., 1., 1.),
     ));
 }
