@@ -7,7 +7,7 @@ use bevy::{
 
 use crate::{
     asset_loader::SceneAssets, cone::spawn_cone_mesh, cube::spawn_cube_mesh,
-    cylinder::spawn_cylinder_mesh,
+    cylinder::spawn_cylinder_mesh, staff::spawn_staff_mesh,
 };
 
 const SUN_DISTANCE: f32 = 100.;
@@ -68,6 +68,7 @@ fn setup_environment(
     spawn_cube_mesh(&mut commands, &mut meshes, &mut materials);
     spawn_cone_mesh(&mut commands, &mut meshes, &mut materials);
     spawn_cylinder_mesh(&mut commands, &mut meshes, &mut materials);
+    spawn_staff_mesh(&mut commands, &mut meshes, &mut materials);
 }
 
 fn uv_debug_texture() -> Image {

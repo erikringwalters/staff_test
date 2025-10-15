@@ -4,6 +4,7 @@ mod cone;
 mod cube;
 mod cylinder;
 mod environment;
+mod staff;
 
 use bevy::prelude::*;
 

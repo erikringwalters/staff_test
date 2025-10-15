@@ -7,27 +7,45 @@ use bevy::mesh::{Indices, PrimitiveTopology};
 use bevy::prelude::*;
 
 use crate::environment::FLOOR_HEIGHT;
+use rand::{Rng, SeedableRng};
+use rand_chacha::ChaCha8Rng;
 
-pub fn spawn_cylinder_mesh(
+pub fn spawn_staff_mesh(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
 ) {
-    let radius = 0.5;
-    let height = 1.;
-    let resolution = 64;
-    let segments = 1;
+    let radius = 0.01;
+    let height = 2.;
+    let resolution = 6;
+    let segments = 4;
+    let horizontal_variance = height * 0.05;
+    let mut rand = ChaCha8Rng::seed_from_u64(19878367467713);
 
-    let mesh = generate_cylinder_mesh(radius, height, resolution, segments);
+    let mesh = generate_staff_mesh(
+        radius,
+        height,
+        resolution,
+        segments,
+        horizontal_variance,
+        &mut rand,
+    );
 
     commands.spawn((
         Mesh3d(meshes.add(mesh)),
-        MeshMaterial3d(materials.add(Color::from(css::BLUE))),
-        Transform::from_xyz(-1., height / 2. + FLOOR_HEIGHT / 2., -1.),
+        MeshMaterial3d(materials.add(Color::from(css::SADDLE_BROWN))),
+        Transform::from_xyz(-1., height / 2. + FLOOR_HEIGHT / 2., 1.),
     ));
 }
 
-pub fn generate_cylinder_mesh(radius: f32, height: f32, resolution: u32, segments: u32) -> Mesh {
+pub fn generate_staff_mesh(
+    radius: f32,
+    height: f32,
+    resolution: u32,
+    segments: u32,
+    horizontal_variance: f32,
+    rand: &mut ChaCha8Rng,
+) -> Mesh {
     let half_height = height / 2.;
     debug_assert!(resolution > 2);
     debug_assert!(resolution > 0);
@@ -48,13 +66,17 @@ pub fn generate_cylinder_mesh(radius: f32, height: f32, resolution: u32, segment
     // rings
 
     for ring in 0..num_rings {
+        let offset = (
+            horizontal_variance * rand.random::<f32>(),
+            horizontal_variance * rand.random::<f32>(),
+        );
         let y = -half_height + ring as f32 * step_y;
 
         for segment in 0..=resolution {
             let theta = segment as f32 * step_theta;
             let (sin, cos) = sin_cos(theta);
 
-            positions.push([radius * cos, y, radius * sin]);
+            positions.push([radius * cos + offset.0, y, radius * sin + offset.1]);
             normals.push([cos, 0., sin]);
             uvs.push([
                 segment as f32 / resolution as f32,
