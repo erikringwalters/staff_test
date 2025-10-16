@@ -16,6 +16,7 @@ pub fn spawn_staff_mesh(
     materials: &mut ResMut<Assets<StandardMaterial>>,
 ) {
     let radius = 0.05;
+    let radial_variance = radius * 0.5;
     let height = 2.;
     let resolution = 6;
     let segments = 4;
@@ -24,6 +25,7 @@ pub fn spawn_staff_mesh(
 
     let mesh = generate_staff_mesh(
         radius,
+        radial_variance,
         height,
         resolution,
         segments,
@@ -40,6 +42,7 @@ pub fn spawn_staff_mesh(
 
 pub fn generate_staff_mesh(
     radius: f32,
+    radial_variance: f32,
     height: f32,
     resolution: u32,
     segments: u32,
@@ -63,26 +66,40 @@ pub fn generate_staff_mesh(
     let step_theta = TAU / resolution as f32;
     let step_y = 2.0 * half_height / segments as f32;
 
-    // Top variance X and Z must be known for cap placement
+    // Bottom and Top variance X and Z must be known for cap placement
+
+    // Bottom variance
+    let bvr = rand.random_range((radius - radial_variance)..radius);
     let bvx = rand.random::<f32>();
     let bvz = rand.random::<f32>();
-
+    // Top variance
+    let tvr = rand.random_range((radius - radial_variance)..radius);
     let tvx = rand.random::<f32>();
     let tvz = rand.random::<f32>();
-    info!("tvx: {:?}, tvy: {:?}", tvx, tvz);
+    info!(
+        "bvx: {:?}, bvz: {:?}, tvx: {:?}, tvy: {:?}",
+        bvx, bvz, tvx, tvz
+    );
 
     // rings
 
     for ring in 0..num_rings {
-        let (vx, vz) = if ring == 0 {
-            // Bottom variance X and Z
-            (bvx, bvz)
+        // TODO: Keep track of top and bottom radial variance for caps
+        // Radius with variance
+
+        let (vr, vx, vz) = if ring == 0 {
+            // Bottom variance radial, X, Z
+            (bvr, bvx, bvz)
         } else if ring == num_rings - 1 {
-            // Top variance X and Z
-            (tvx, tvz)
+            // Top variance radial, X, Z
+            (tvr, tvx, tvz)
         } else {
             // New random variances X and Z
-            (rand.random::<f32>(), rand.random::<f32>())
+            (
+                rand.random_range((radius - radial_variance)..radius),
+                rand.random::<f32>(),
+                rand.random::<f32>(),
+            )
         };
 
         let offset = (horizontal_variance * vx, horizontal_variance * vz);
@@ -92,7 +109,7 @@ pub fn generate_staff_mesh(
             let theta = segment as f32 * step_theta;
             let (sin, cos) = sin_cos(theta);
 
-            positions.push([radius * cos + offset.0, y, radius * sin + offset.1]);
+            positions.push([vr * cos + offset.0, y, vr * sin + offset.1]);
             normals.push([cos, 0., sin]);
             uvs.push([
                 segment as f32 / resolution as f32,
@@ -122,11 +139,12 @@ pub fn generate_staff_mesh(
     // caps
     let mut build_cap = |top: bool| {
         let offset = positions.len() as u32;
-        let (y, normal_y, winding, variance_offset) = if top {
+        let (y, normal_y, winding, radial_variance, variance_offset) = if top {
             (
                 half_height,
                 1.,
                 (1, 0),
+                tvr,
                 (horizontal_variance * tvx, horizontal_variance * tvz),
             )
         } else {
@@ -134,6 +152,7 @@ pub fn generate_staff_mesh(
                 -half_height,
                 -1.,
                 (0, 1),
+                bvr,
                 (horizontal_variance * bvx, horizontal_variance * bvz),
             )
         };
@@ -143,9 +162,9 @@ pub fn generate_staff_mesh(
             let (sin, cos) = sin_cos(theta);
 
             positions.push([
-                cos * radius + variance_offset.0,
+                cos * radial_variance + variance_offset.0,
                 y,
-                sin * radius + variance_offset.1,
+                sin * radial_variance + variance_offset.1,
             ]);
             normals.push([0.0, normal_y, 0.0]);
             uvs.push([0.5 * (cos + 1.0), 1.0 - 0.5 * (sin + 1.0)]);
