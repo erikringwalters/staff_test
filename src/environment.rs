@@ -6,8 +6,12 @@ use bevy::{
 };
 
 use crate::{
-    asset_loader::SceneAssets, cone::spawn_cone_mesh, cube::spawn_cube_mesh,
-    cylinder::spawn_cylinder_mesh, staff::spawn_staff_mesh,
+    asset_loader::SceneAssets,
+    cone::spawn_cone_mesh,
+    crystal::spawn_crystal_mesh,
+    cube::spawn_cube_mesh,
+    cylinder::{CylinderNormals, display_cylinder_vertex_normals, spawn_cylinder_mesh},
+    staff::spawn_staff_mesh,
 };
 
 const SUN_DISTANCE: f32 = 100.;
@@ -22,7 +26,9 @@ pub struct EnvironmentPlugin;
 
 impl Plugin for EnvironmentPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup_environment);
+        app.insert_resource(CylinderNormals::default())
+            .add_systems(Startup, setup_environment)
+            .add_systems(Update, display_cylinder_vertex_normals);
     }
 }
 
@@ -32,6 +38,7 @@ fn setup_environment(
     mut images: ResMut<Assets<Image>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     scene_assets: Res<SceneAssets>,
+    crystal_normals: ResMut<CylinderNormals>,
 ) {
     let debug_material = materials.add(StandardMaterial {
         base_color_texture: Some(images.add(uv_debug_texture())),
@@ -67,8 +74,9 @@ fn setup_environment(
 
     spawn_cube_mesh(&mut commands, &mut meshes, &mut materials);
     spawn_cone_mesh(&mut commands, &mut meshes, &mut materials);
-    spawn_cylinder_mesh(&mut commands, &mut meshes, &mut materials);
+    spawn_cylinder_mesh(&mut commands, &mut meshes, &mut materials, crystal_normals);
     spawn_staff_mesh(&mut commands, &mut meshes, &mut materials);
+    spawn_crystal_mesh(&mut commands, &mut meshes, &mut materials);
 }
 
 fn uv_debug_texture() -> Image {

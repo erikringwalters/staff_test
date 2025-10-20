@@ -36,7 +36,7 @@ pub fn spawn_staff_mesh(
     commands.spawn((
         Mesh3d(meshes.add(mesh)),
         MeshMaterial3d(materials.add(Color::from(css::SADDLE_BROWN))),
-        Transform::from_xyz(-1., height / 2. + FLOOR_HEIGHT / 2. + 0.5, 1.),
+        Transform::from_xyz(-2., height / 2. + FLOOR_HEIGHT / 2. + 0.5, 0.),
     ));
 }
 
@@ -69,7 +69,8 @@ pub fn generate_staff_mesh(
     // Bottom and Top variance X and Z must be known for cap placement
 
     // Bottom variance
-    let bvr = rand.random_range((radius - radial_variance)..radius);
+    // Bottom radius should be a little smaller than top
+    let bvr = rand.random_range((radius / 2. - radial_variance)..(radius / 2.));
     let bvx = rand.random::<f32>();
     let bvz = rand.random::<f32>();
     // Top variance
@@ -84,7 +85,6 @@ pub fn generate_staff_mesh(
     // rings
 
     for ring in 0..num_rings {
-        // TODO: Keep track of top and bottom radial variance for caps
         // Radius with variance
 
         let (vr, vx, vz) = if ring == 0 {

@@ -1,6 +1,7 @@
 mod asset_loader;
 mod camera;
 mod cone;
+mod crystal;
 mod cube;
 mod cylinder;
 mod environment;

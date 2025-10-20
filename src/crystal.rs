@@ -5,44 +5,34 @@ use bevy::color::palettes::css;
 use bevy::math::ops::sin_cos;
 use bevy::mesh::{Indices, PrimitiveTopology};
 use bevy::prelude::*;
+// use rand::SeedableRng;
+// use rand_chacha::ChaCha8Rng;
 
 use crate::environment::FLOOR_HEIGHT;
 
-#[derive(Resource, Default, Debug)]
-pub struct CylinderNormals {
-    positions: Vec<Vec3>,
-    directions: Vec<Vec3>,
-    origin: Vec3,
-}
-
-pub fn spawn_cylinder_mesh(
+pub fn spawn_crystal_mesh(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
-    mut crystal_normals: ResMut<CylinderNormals>,
 ) {
     let radius = 0.5;
+    let radial_variance = radius * 0.5;
     let height = 1.;
     let resolution = 6;
-    let segments = 1;
+    // let horizontal_variance = height * 0.05;
+    // let mut rand = ChaCha8Rng::seed_from_u64(19878367467713);
 
-    let mesh = generate_cylinder_mesh(radius, height, resolution, segments, &mut crystal_normals);
-    crystal_normals.origin = vec3(-1., height / 2. + FLOOR_HEIGHT / 2., 1.);
+    let mesh = generate_crystal_mesh(radius, radial_variance, resolution);
 
     commands.spawn((
         Mesh3d(meshes.add(mesh)),
-        MeshMaterial3d(materials.add(Color::from(css::GREEN))),
-        Transform::from_translation(crystal_normals.origin),
+        MeshMaterial3d(materials.add(Color::from(css::SKY_BLUE))),
+        Transform::from_xyz(-1., height / 2. + FLOOR_HEIGHT / 2., -1.),
     ));
 }
 
-pub fn generate_cylinder_mesh(
-    radius: f32,
-    height: f32,
-    resolution: u32,
-    segments: u32,
-    crystal_normals: &mut ResMut<CylinderNormals>,
-) -> Mesh {
+fn generate_crystal_mesh(radius: f32, height: f32, resolution: u32) -> Mesh {
+    let segments = 1;
     let half_height = height / 2.;
     debug_assert!(resolution > 2);
     debug_assert!(resolution > 0);
@@ -71,10 +61,6 @@ pub fn generate_cylinder_mesh(
 
             positions.push([radius * cos, y, radius * sin]);
             normals.push([cos, 0., sin]);
-            crystal_normals
-                .positions
-                .push(vec3(radius * cos, y, radius * sin));
-            crystal_normals.directions.push(vec3(cos, 0., sin));
             uvs.push([
                 segment as f32 / resolution as f32,
                 ring as f32 / segment as f32,
@@ -115,10 +101,6 @@ pub fn generate_cylinder_mesh(
 
             positions.push([cos * radius, y, sin * radius]);
             normals.push([0.0, normal_y, 0.0]);
-            crystal_normals
-                .positions
-                .push(vec3(cos * radius, y, sin * radius));
-            crystal_normals.directions.push(vec3(0.0, normal_y, 0.0));
             uvs.push([0.5 * (cos + 1.0), 1.0 - 0.5 * (sin + 1.0)]);
         }
 
@@ -140,29 +122,4 @@ pub fn generate_cylinder_mesh(
     .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, positions)
     .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, normals)
     .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, uvs)
-}
-
-pub fn display_cylinder_vertex_normals(
-    mut gizmos: Gizmos,
-    mut crystal_normals: ResMut<CylinderNormals>,
-) {
-    for i in 0..crystal_normals.positions.len() {
-        // info!("position {:?}: {:?}", i, crystal_normals.positions[i]);
-        // info!("normal {:?}: {:?}", i, crystal_normals.directions[i]);
-        let end = crystal_normals.positions[i] + crystal_normals.directions[i];
-        draw_gizmos(&mut gizmos, &mut crystal_normals, end, i);
-    }
-}
-
-fn draw_gizmos(
-    gizmos: &mut Gizmos,
-    crystal_normals: &mut ResMut<CylinderNormals>,
-    end: Vec3,
-    i: usize,
-) {
-    gizmos.arrow(
-        crystal_normals.origin + crystal_normals.positions[i],
-        crystal_normals.origin + end,
-        css::WHITE,
-    );
 }
