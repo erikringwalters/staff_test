@@ -156,13 +156,13 @@ pub fn display_cylinder_vertex_normals(
 
 fn draw_gizmos(
     gizmos: &mut Gizmos,
-    crystal_normals: &mut ResMut<CylinderNormals>,
+    cylinder_normals: &mut ResMut<CylinderNormals>,
     end: Vec3,
     i: usize,
 ) {
     gizmos.arrow(
-        crystal_normals.origin + crystal_normals.positions[i],
-        crystal_normals.origin + end,
+        cylinder_normals.origin + cylinder_normals.positions[i],
+        cylinder_normals.origin + end,
         css::WHITE,
     );
 }

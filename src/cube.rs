@@ -1,64 +1,103 @@
 use bevy::mesh::Indices;
 use bevy::{asset::RenderAssetUsages, color::palettes::css, mesh::PrimitiveTopology, prelude::*};
 
+#[derive(Resource, Default, Debug)]
+pub struct CubeNormals {
+    positions: Vec<Vec3>,
+    directions: Vec<Vec3>,
+    origin: Vec3,
+}
+
 pub fn spawn_cube_mesh(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
+    mut cube_normals: ResMut<CubeNormals>,
 ) {
-    let mesh = generate_cube_mesh();
+    let mesh = generate_cube_mesh(&mut cube_normals);
+    cube_normals.origin = vec3(1., 1., 1.);
     commands.spawn((
         Mesh3d(meshes.add(mesh)),
         MeshMaterial3d(materials.add(Color::from(css::BLUE))),
-        Transform::from_xyz(1., 1., 1.),
+        Transform::from_translation(cube_normals.origin),
     ));
 }
 
-pub fn generate_cube_mesh() -> Mesh {
+pub fn generate_cube_mesh(cube_normals: &mut ResMut<CubeNormals>) -> Mesh {
     // Keep the mesh data accessible in future frames to be able to mutate it in toggle_texture.
+    // Each array is an vec3(x, y, z) coordinate in local space.
+    // The camera coordinate space is right-handed x-right, y-up, z-back. This means "forward" is -Z.
+    // Meshes always rotate around their local vec3(0, 0, 0) when a rotation is applied to their Transform.
+    // By centering our mesh around the origin, rotating the mesh preserves its center of mass.
+    cube_normals.positions = vec![
+        // top (facing towards +y)
+        vec3(-0.5, 0.5, -0.5), // vertex with index 0
+        vec3(0.5, 0.5, -0.5),  // vertex with index 1
+        vec3(0.5, 0.5, 0.5),   // etc. until 23
+        vec3(-0.5, 0.5, 0.5),
+        // bottom   (-y)
+        vec3(-0.5, -0.5, -0.5),
+        vec3(0.5, -0.5, -0.5),
+        vec3(0.5, -0.5, 0.5),
+        vec3(-0.5, -0.5, 0.5),
+        // right    (+x)
+        vec3(0.5, -0.5, -0.5),
+        vec3(0.5, -0.5, 0.5),
+        vec3(0.5, 0.5, 0.5), // This vertex is at the same position as vertex with index 2, but they'll have different UV and normal
+        vec3(0.5, 0.5, -0.5),
+        // left     (-x)
+        vec3(-0.5, -0.5, -0.5),
+        vec3(-0.5, -0.5, 0.5),
+        vec3(-0.5, 0.5, 0.5),
+        vec3(-0.5, 0.5, -0.5),
+        // back     (+z)
+        vec3(-0.5, -0.5, 0.5),
+        vec3(-0.5, 0.5, 0.5),
+        vec3(0.5, 0.5, 0.5),
+        vec3(0.5, -0.5, 0.5),
+        // forward  (-z)
+        vec3(-0.5, -0.5, -0.5),
+        vec3(-0.5, 0.5, -0.5),
+        vec3(0.5, 0.5, -0.5),
+        vec3(0.5, -0.5, -0.5),
+    ];
+    cube_normals.directions = vec![
+        // Normals for the top side (towards +y)
+        vec3(0.0, 1.0, 0.0),
+        vec3(0.0, 1.0, 0.0),
+        vec3(0.0, 1.0, 0.0),
+        vec3(0.0, 1.0, 0.0),
+        // Normals for the bottom side (towards -y)
+        vec3(0.0, -1.0, 0.0),
+        vec3(0.0, -1.0, 0.0),
+        vec3(0.0, -1.0, 0.0),
+        vec3(0.0, -1.0, 0.0),
+        // Normals for the right side (towards +x)
+        vec3(1.0, 0.0, 0.0),
+        vec3(1.0, 0.0, 0.0),
+        vec3(1.0, 0.0, 0.0),
+        vec3(1.0, 0.0, 0.0),
+        // Normals for the left side (towards -x)
+        vec3(-1.0, 0.0, 0.0),
+        vec3(-1.0, 0.0, 0.0),
+        vec3(-1.0, 0.0, 0.0),
+        vec3(-1.0, 0.0, 0.0),
+        // Normals for the back side (towards +z)
+        vec3(0.0, 0.0, 1.0),
+        vec3(0.0, 0.0, 1.0),
+        vec3(0.0, 0.0, 1.0),
+        vec3(0.0, 0.0, 1.0),
+        // Normals for the forward side (towards -z)
+        vec3(0.0, 0.0, -1.0),
+        vec3(0.0, 0.0, -1.0),
+        vec3(0.0, 0.0, -1.0),
+        vec3(0.0, 0.0, -1.0),
+    ];
     Mesh::new(
         PrimitiveTopology::TriangleList,
         RenderAssetUsages::MAIN_WORLD | RenderAssetUsages::RENDER_WORLD,
     )
-    .with_inserted_attribute(
-        Mesh::ATTRIBUTE_POSITION,
-        // Each array is an [x, y, z] coordinate in local space.
-        // The camera coordinate space is right-handed x-right, y-up, z-back. This means "forward" is -Z.
-        // Meshes always rotate around their local [0, 0, 0] when a rotation is applied to their Transform.
-        // By centering our mesh around the origin, rotating the mesh preserves its center of mass.
-        vec![
-            // top (facing towards +y)
-            [-0.5, 0.5, -0.5], // vertex with index 0
-            [0.5, 0.5, -0.5],  // vertex with index 1
-            [0.5, 0.5, 0.5],   // etc. until 23
-            [-0.5, 0.5, 0.5],
-            // bottom   (-y)
-            [-0.5, -0.5, -0.5],
-            [0.5, -0.5, -0.5],
-            [0.5, -0.5, 0.5],
-            [-0.5, -0.5, 0.5],
-            // right    (+x)
-            [0.5, -0.5, -0.5],
-            [0.5, -0.5, 0.5],
-            [0.5, 0.5, 0.5], // This vertex is at the same position as vertex with index 2, but they'll have different UV and normal
-            [0.5, 0.5, -0.5],
-            // left     (-x)
-            [-0.5, -0.5, -0.5],
-            [-0.5, -0.5, 0.5],
-            [-0.5, 0.5, 0.5],
-            [-0.5, 0.5, -0.5],
-            // back     (+z)
-            [-0.5, -0.5, 0.5],
-            [-0.5, 0.5, 0.5],
-            [0.5, 0.5, 0.5],
-            [0.5, -0.5, 0.5],
-            // forward  (-z)
-            [-0.5, -0.5, -0.5],
-            [-0.5, 0.5, -0.5],
-            [0.5, 0.5, -0.5],
-            [0.5, -0.5, -0.5],
-        ],
-    )
+    .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, cube_normals.positions.clone())
     // Set-up UV coordinates to point to the upper (V < 0.5), "dirt+grass" part of the texture.
     // Take a look at the custom image (assets/textures/array_texture.png)
     // so the UV coords will make more sense
@@ -102,41 +141,7 @@ pub fn generate_cube_mesh() -> Mesh {
     // the surface.
     // Normals are required for correct lighting calculations.
     // Each array represents a normalized vector, which length should be equal to 1.0.
-    .with_inserted_attribute(
-        Mesh::ATTRIBUTE_NORMAL,
-        vec![
-            // Normals for the top side (towards +y)
-            [0.0, 1.0, 0.0],
-            [0.0, 1.0, 0.0],
-            [0.0, 1.0, 0.0],
-            [0.0, 1.0, 0.0],
-            // Normals for the bottom side (towards -y)
-            [0.0, -1.0, 0.0],
-            [0.0, -1.0, 0.0],
-            [0.0, -1.0, 0.0],
-            [0.0, -1.0, 0.0],
-            // Normals for the right side (towards +x)
-            [1.0, 0.0, 0.0],
-            [1.0, 0.0, 0.0],
-            [1.0, 0.0, 0.0],
-            [1.0, 0.0, 0.0],
-            // Normals for the left side (towards -x)
-            [-1.0, 0.0, 0.0],
-            [-1.0, 0.0, 0.0],
-            [-1.0, 0.0, 0.0],
-            [-1.0, 0.0, 0.0],
-            // Normals for the back side (towards +z)
-            [0.0, 0.0, 1.0],
-            [0.0, 0.0, 1.0],
-            [0.0, 0.0, 1.0],
-            [0.0, 0.0, 1.0],
-            // Normals for the forward side (towards -z)
-            [0.0, 0.0, -1.0],
-            [0.0, 0.0, -1.0],
-            [0.0, 0.0, -1.0],
-            [0.0, 0.0, -1.0],
-        ],
-    )
+    .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, cube_normals.directions.clone())
     // Create the triangles out of the 24 vertices we created.
     // To construct a square, we need 2 triangles, therefore 12 triangles in total.
     // To construct a triangle, we need the indices of its 3 defined vertices, adding them one
@@ -180,4 +185,19 @@ pub fn generate_cube_mesh() -> Mesh {
         16, 19, 17, 17, 19, 18, // back (+z)
         20, 21, 23, 21, 22, 23, // forward (-z)
     ]))
+}
+
+pub fn display_cube_vertex_normals(mut gizmos: Gizmos, mut cube_normals: ResMut<CubeNormals>) {
+    for i in 0..cube_normals.positions.len() {
+        let end = cube_normals.positions[i] + cube_normals.directions[i];
+        draw_gizmos(&mut gizmos, &mut cube_normals, end, i);
+    }
+}
+
+fn draw_gizmos(gizmos: &mut Gizmos, cube_normals: &mut ResMut<CubeNormals>, end: Vec3, i: usize) {
+    gizmos.arrow(
+        cube_normals.origin + cube_normals.positions[i],
+        cube_normals.origin + end,
+        css::WHITE,
+    );
 }
